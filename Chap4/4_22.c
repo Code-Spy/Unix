@@ -36,3 +36,55 @@ main(int argc, char *argv[])
 	
 	exit(ret);
 }
+
+
+/*
+* Descend through the hierarchy, starting at "pathname".
+* The caller's func() is called for every file.
+*/
+#define FTW_F 1
+#define FTW_D 2
+#define FTW_DNR 3
+#define FTW_NS 4
+
+static char *fullpath;		//contains full pathname for every file
+static size_t pathlen;
+
+static int 
+myftw(char *pathname, Myfunc *func)
+{
+	fullpath = path_alloc(&pathlen);	//alloc PATH_MAX+1 bytes
+	
+	if (pathlen <= strlen(pathname)) {
+		pathlen = strlen(pathname) * 2;
+		if ((fullpath = realloc(fullpath, pathlen)) == NULL)
+			err_sys("realloc failed");
+	}
+	strcpy(fullpath, pathname);
+	return(dopath(func));
+}
+
+/*
+ * Descend through the hierarchy, starting at "pathname".
+ * If "fullpath" is anything other than a directory, we lstat() it,
+ * call func(), and return. For a directory , we call outself
+ * recursively for each name in the directory.
+ */
+
+static int 
+dopath(Myfunc* func)
+{
+	struct stat	statbuf;
+	struct dirent	*dirp;
+	DIR		*dp;
+	int 		ret,n;
+
+	if(lstat(fullpath,&statbuf) < 0)	//stat error
+		return(func(fullpath,&statbuf,FTW_NS));
+	if(S_ISDIR(statbuf.st_mode) == 0)	//not a directory
+		return(func(fullpath,&statbuf,FTW_F));
+	/*
+	 * It is a directory. FIrst call func() for the directory,
+	 */
+
+}
