@@ -79,12 +79,68 @@ dopath(Myfunc* func)
 	DIR		*dp;
 	int 		ret,n;
 
-	if(lstat(fullpath,&statbuf) < 0)	//stat error
+	if (lstat(fullpath,&statbuf) < 0)	//stat error
 		return(func(fullpath,&statbuf,FTW_NS));
-	if(S_ISDIR(statbuf.st_mode) == 0)	//not a directory
+	if (S_ISDIR(statbuf.st_mode) == 0)	//not a directory
 		return(func(fullpath,&statbuf,FTW_F));
 	/*
 	 * It is a directory. FIrst call func() for the directory,
+	 * then process each filename in the directory.
 	 */
-
+	if (n + NAME_MAX +2 > pathlen) {	//expand path buffer
+		pathlen *= 2;
+		if ((fullpath = realloc(fullpath,pathlen)) == NULL)
+			err_sys("reallic failed");
+	}
+	fullpath[n++] = '/';
+	fullpath[n] = 0;
+	if ((dp = opendir(fullpath)) == NULL) 	//can't read directory
+		return(func(fullpath,&statbuf,FTW_DNR));
+	while ((dirp = readdir(dp)) != NULL) {
+		if (strcmp(dirp->d_name, ".") == 0 ||
+			strcmp(dirp->d_name, "..") == 0)
+			continue;	//ingore dot ,and dot-dot
+		strcpy(&fullpath[n], dirp->d_name);	//append name after "/"
+		if ((ret = dopath(func)) != 0)		//recursive
+			break;
+	}
+	fullpath[n-1] = 0; 	//erase everything from slash onward
+	if (closedir(dp) < 0)
+		err_ret("can't close directory %s", fullpath);
+	return (ret);
 }
+
+static int 
+myfunc(const char *pathname, const struct stat *statptr, int type)
+{
+	switch (type) {
+	case FTW_F:
+		switch (statptr->st_mode & S_IFMT) {
+		case S_IFREG:	nreg++;		break;
+		case S_IFBLK:	nblk++;		break;
+		case S_IFCHR:	nchr++;		break;
+		case S_IFIFO:	nfifo++;	break;
+		case S_IFLNK:	nslink++;	break;
+		case S_IFSOCK:	nsock++;	break;
+		case S_IFDIR:	//directories should have type = FTW_D
+			err_dump("for S_IFDIR for %s", pathname);
+		}
+		break;
+	case FTW_D:
+		ndir++;
+		break;
+	case FTW_DNR:
+		err_ret("can't read directory %s", pathname);
+		break;
+	case FTW_NS:
+		err_ret("stat error for %s", pathname);
+		break;
+	default:
+		err_dump("unknown type %d for pathname %s", type, pathname);
+	}
+	return(0);
+}
+	
+
+
+
