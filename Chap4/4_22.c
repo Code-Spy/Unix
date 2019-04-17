@@ -1,6 +1,7 @@
 #include "apue.h"
 #include <dirent.h>
 #include <limits.h>
+#include "ex2_16.h"
 
 /*	function type that is  called for each filename		*/
 typedef int Myfunc(const char *, const struct stat *, int);
