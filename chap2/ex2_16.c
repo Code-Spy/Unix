@@ -1,4 +1,3 @@
-#include "ex2_16.h"
 #include "apue.h"
 #include <errno.h>
 #include <limits.h>
