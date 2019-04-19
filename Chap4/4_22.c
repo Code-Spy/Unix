@@ -47,21 +47,26 @@ main(int argc, char *argv[])
 #define FTW_D 2
 #define FTW_DNR 3
 #define FTW_NS 4
-
+//#define DEBUG
 static char *fullpath;		//contains full pathname for every file
 static size_t pathlen;
-
+static int times = 0;
 static int 
 myftw(char *pathname, Myfunc *func)
 {
 	fullpath = path_alloc(&pathlen);	//alloc PATH_MAX+1 bytes
-	
+	#ifdef DEBUG
+	printf("fullpath = %s,pathlen=%ld\n",fullpath,pathlen);
+	#endif
 	if (pathlen <= strlen(pathname)) {
 		pathlen = strlen(pathname) * 2;
 		if ((fullpath = realloc(fullpath, pathlen)) == NULL)
 			err_sys("realloc failed");
 	}
 	strcpy(fullpath, pathname);
+	#ifdef DEBUG
+	printf("fullpath = %s\n",fullpath);
+	#endif
 	return(dopath(func));
 }
 
@@ -78,7 +83,14 @@ dopath(Myfunc* func)
 	struct stat	statbuf;
 	struct dirent	*dirp;
 	DIR		*dp;
-	int 		ret,n;
+	int 		ret,n,z;
+
+	#ifdef DEBUG
+	printf("fullpath = %s,times = %d\n",fullpath,times);
+	z= lstat(fullpath,&statbuf);
+	printf("lstat = %d\n",z);
+	times++;
+	#endif
 
 	if (lstat(fullpath,&statbuf) < 0)	//stat error
 		return(func(fullpath,&statbuf,FTW_NS));
@@ -88,6 +100,9 @@ dopath(Myfunc* func)
 	 * It is a directory. FIrst call func() for the directory,
 	 * then process each filename in the directory.
 	 */
+	if ((ret = func(fullpath, &statbuf, FTW_D)) != 0)
+		return(ret);
+	n = strlen(fullpath);
 	if (n + NAME_MAX +2 > pathlen) {	//expand path buffer
 		pathlen *= 2;
 		if ((fullpath = realloc(fullpath,pathlen)) == NULL)
