@@ -47,7 +47,7 @@ main(int argc, char *argv[])
 #define FTW_D 2
 #define FTW_DNR 3
 #define FTW_NS 4
-//#define DEBUG
+#define DEBUG 1
 static char *fullpath;		//contains full pathname for every file
 static size_t pathlen;
 static int times = 0;
@@ -56,7 +56,7 @@ myftw(char *pathname, Myfunc *func)
 {
 	fullpath = path_alloc(&pathlen);	//alloc PATH_MAX+1 bytes
 	#ifdef DEBUG
-	printf("fullpath = %s,pathlen=%ld\n",fullpath,pathlen);
+	//printf("fullpath = %s,pathlen=%ld\n",fullpath,pathlen);
 	#endif
 	if (pathlen <= strlen(pathname)) {
 		pathlen = strlen(pathname) * 2;
@@ -65,7 +65,7 @@ myftw(char *pathname, Myfunc *func)
 	}
 	strcpy(fullpath, pathname);
 	#ifdef DEBUG
-	printf("fullpath = %s\n",fullpath);
+	//printf("fullpath = %s\n",fullpath);
 	#endif
 	return(dopath(func));
 }
